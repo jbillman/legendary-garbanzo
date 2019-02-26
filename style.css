@@ -1,0 +1,22 @@
+
+body{
+   margin: 0px;
+   padding: 0px;
+   height: 300px;
+   width: 350px;
+}
+.wrapper{
+   padding: 5px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+h1{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    text-align: center;
+}
+button {
+   padding: 5px;
+   margin: 0px;
+   background-color: cornflowerblue;
+}
