@@ -2,7 +2,6 @@
     "name": "Homework Calendar Integration",
     "version": "1.0",
     "description": "Integrate your homework assignments to your google calendar",
-    "manifest_version": 2,
     "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsUo5oWSkw3d5gTP4kkGjoj0LoJzC2LN9j+7aaWiFNTXdcyHCQhHsw2vS3tzp03IuPShzVOhx6zILDy8vuJHnDXuAUzNvnixohSrtrvuhZw7IkIhRMJGl6jGGXfOLWehnIpf+CD9eEADtPAR+WyO+iHccMCR1AORQA4a8eZ79BVa5HSkORHkbAp8Zz4hysgT9mX2ITXDwgKlqBTpbBkpYDUsGhx06/YOT/l4iwefXXXhCfhQfCkp9/za1VrbGnf4oVZpkgDn6/df2/3YXFRqTr9easefXZWPnH5oIziQVk8/KN4TR2CjzWgeenI1UEJgTvGG/rZaMkYovJs75MeMjhQIDAQAB",
     "oauth2":{
         "client_id": "838303626781-9dd2jkscnnrto6spsb4esbo97dfq1p9h.apps.googleusercontent.com",
@@ -11,17 +10,13 @@
             "https://googleapis.com/auth/calendar.events"
         ]
     },
+    "browser_action": {
+        "default_popup": "popup.html",
+        "default_title": "Sync to your calendar"
+    },
     "permissions":[
         "activeTab", "declarativeContent", "identity", "storage"
     ],
-    "page_action": {
-        "default_popup": "popup.html"
-    },
-    "background": {
-      "scripts": [
-        "background.js"
-      ],
-      "persistent": false
-    }
+    "manifest_version": 2
 }
 
