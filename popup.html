@@ -3,15 +3,21 @@
     <meta charset="utf-8">
     <title>Document</title>
     <script type="text/javascript" src="oauth.js"></script>
+    <script type="text/javascript" src="background.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
-    <h1>Sync to your Calendar</h1>  
-    <div class="wrapper">
-        <button class="googleLogin"><strong>Calendar Login</strong></button>
-        <button class="brightLogin"><strong>iLearn Login</strong></button>
-        <button class="canvasLogin"><strong>Canvas Login</strong></button>
-        <div class="testDiv"></div>
-    </div>
+   <div class="heading">
+      <h5 class="welcome"></h5>
+      <h5>Sync to your Calendar</h5>
+   </div>  
+   <div class="wrapper">
+      <button class="googleLogin btn-primary"><strong>Calendar Login</strong></button>
+      <button class="brightLogin btn-success"><strong>iLearn Login</strong></button>
+      <button class="canvasLogin btn-warning"><strong>Canvas Login</strong></button>
+      <div class="testDiv btn-danger"></div>
+   </div>
 </body>
 </html>

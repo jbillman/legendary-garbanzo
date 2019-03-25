@@ -1,22 +1,28 @@
 
 body{
-   margin: 0px;
-   padding: 0px;
+   margin: 5px;
+   padding: 5px;
    height: 300px;
    width: 350px;
 }
+
+h5{
+   font-family: Verdana, Geneva, Tahoma, sans-serif;
+   text-align: center;
+}
+
 .wrapper{
    padding: 5px;
    display: flex;
    align-items: center;
    justify-content: center;
 }
-h1{
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    text-align: center;
+
+.heading{
+   border: groove blue;
 }
-button {
+/* button{
    padding: 5px;
    margin: 0px;
    background-color: cornflowerblue;
-}
+} */
