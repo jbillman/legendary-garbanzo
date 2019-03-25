@@ -1,3 +1,21 @@
+// grab users
+
+//TODO store brightspace user
+
+//TODO store canvas user
+
+// grab courses
+
+//TODO store brightspace courses
+
+//TODO store canvas courses
+
+// grab assignments
+
+//TODO grab brightspace homework
+
+//TODO grab canvas homework
+
 window.onload = function() {
    init();
    document.querySelector('.googleLogin').addEventListener('click', function() {
@@ -6,36 +24,46 @@ window.onload = function() {
       });
    });
 
+   document.querySelector('.brightLogin').addEventListener('click', function(){
+      displayUser();
+      let enrollment = getEnrollment();
+      console.log(enrollment);
+    })
+
    document.querySelector('.canvasLogin').addEventListener('click', function() {
       //Stuff goes here
    });
-
-   document.querySelector('.brightLogin').addEventListener('click', function(){
-     displayUser();
-     let enrollment = getEnrollment();
-     console.log(enrollment);
-   })
 };
 
 
 async function init(){
-   let user = getUserBrightspace()
-   // user.then(user => {
-   //    console.log(user);
-   //   renderWelcome(user);
-   // });
-   let url = "https://byui.instructure.com/api/v1/users/self";
-   //document.querySelector('.heading').innerHTML = await getText(url);
+   try{
+      let userBright = await getUserBrightspace();
+      renderWelcome(userBright.FirstName);
+  
+      console.log(userBright);
+   }
+   catch(error){
+      console.log(error);
+   }
+
+   // trys to grab the user from Canvas
+   try{
+      let url = "https://byui.instructure.com/api/v1/users/self";
+      let userCanvas = JSON.parse((await getText(url)).split(";")[1]);
+      console.log(userCanvas.name) 
+   }
+   catch(error){
+      console.log(error);
+   }
 };
 
-function renderWelcome(user){
+function renderWelcome(username){
    let welcome = document.querySelector('.welcome');
    try{
-      welcome.innerHTML = `Welcome, ${user.FirstName}`;
-      console.log('In try. User => ' + user);
+      welcome.innerHTML = `Welcome, ${username}`;
    }catch{      
       welcome.innerHTML = `Welcome, please log in!`;
-      console.log('in catch. User => ' + user);
    }
 } 
 
@@ -60,27 +88,19 @@ function getText(url){
 }
 
 async function getUserBrightspace(){
-      getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami")
-      .then(response => {
-         console.log("successfully returned user")
-         console.log(response);
+   try{ 
+      let response = await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
+      
+      //console.log("successfully returned user")
+      //console.log(response);
          
-         return response;
-      })
-      .catch(error =>{
+      return response;
+   }
+   catch{
          console.log("Did not return user. Not logged in, maybe?")
          console.log(error);
          chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: false});
-      })
-}
-
-function getUserCanvas(){
-   getJSON("")
-}
-
-function displayUser(){
-   let user = getUserBrightspace();
-   console.log(user)
+   }
 }
 
 async function getEnrollment(){
