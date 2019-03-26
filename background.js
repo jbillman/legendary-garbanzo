@@ -18,19 +18,19 @@
 
 window.onload = function() {
    init();
-   document.querySelector('.googleLogin').addEventListener('click', function() {
+   document.querySelector('.googleBtn').addEventListener('click', function() {
       chrome.identity.getAuthToken({interactive: true}, function(token) {
          console.log(token);
       });
    });
 
-   document.querySelector('.brightLogin').addEventListener('click', function(){
+   document.querySelector('.brightBtn').addEventListener('click', function(){
       displayUser();
       let enrollment = getEnrollment();
       console.log(enrollment);
     })
 
-   document.querySelector('.canvasLogin').addEventListener('click', function() {
+   document.querySelector('.canvasBtn').addEventListener('click', function() {
       //Stuff goes here
    });
 };
@@ -40,7 +40,10 @@ async function init(){
    try{
       let userBright = await getUserBrightspace();
       renderWelcome(userBright.FirstName);
-  
+      
+      let login = document.querySelector('.brightLogin')
+      login.innerHTML = `Logged in! ✔️`;
+      
       console.log(userBright);
    }
    catch(error){
@@ -51,7 +54,7 @@ async function init(){
    try{
       let url = "https://byui.instructure.com/api/v1/users/self";
       let userCanvas = JSON.parse((await getText(url)).split(";")[1]);
-      console.log(userCanvas.name) 
+      console.log(userCanvas.name); 
    }
    catch(error){
       console.log(error);
@@ -60,8 +63,9 @@ async function init(){
 
 function renderWelcome(username){
    let welcome = document.querySelector('.welcome');
+   
    try{
-      welcome.innerHTML = `Welcome, ${username}`;
+      welcome.innerHTML = `Welcome, ${username}!`
    }catch{      
       welcome.innerHTML = `Welcome, please log in!`;
    }

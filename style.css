@@ -2,24 +2,31 @@
 body{
    margin: 5px;
    padding: 5px;
-   height: 300px;
+   height: 400px;
    width: 350px;
 }
 
 h5{
    font-family: Verdana, Geneva, Tahoma, sans-serif;
-   text-align: center;
 }
 
 .wrapper{
-   padding: 5px;
-   display: flex;
-   align-items: center;
-   justify-content: center;
+   margin-top: 10px;
+   margin-bottom: 10px;
+}
+
+.sync{
+   padding-top: 10px;
+   border-top: solid black 5px;
 }
 
 .heading{
-   border: groove blue;
+   border: groove black;
+   padding: 5px;
+}
+
+.disabled{
+   background: gray;
 }
 /* button{
    padding: 5px;
