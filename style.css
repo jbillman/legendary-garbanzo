@@ -21,8 +21,14 @@ h5{
 }
 
 .heading{
-   border: groove black;
+   text-align: center;
+   border: solid black;
    padding: 5px;
+}
+
+.welcome{
+   border-bottom: solid black 5px;
+   padding-bottom: 5px;
 }
 
 .disabled{
