@@ -27,6 +27,7 @@ h5{
 }
 
 .welcome{
+   text-align: center;
    border-bottom: solid black 5px;
    padding-bottom: 5px;
 }

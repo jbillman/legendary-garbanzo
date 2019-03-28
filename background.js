@@ -1,11 +1,19 @@
-// grab users
-let _userBrightspace = "";
-let _userCanvas = "";
-let syncBtn = "";
-let brightBtn = "";
-let canvasBtn = "";
-let googleBtn = "";
-// grab courses
+
+let _userBrightspace = null;
+let _userCanvas = null;
+let _userGoogle = null;
+
+let syncBtn = null;
+let brightBtn = null;
+let canvasBtn = null;
+let googleBtn = null;
+
+let brightLogin = null;
+let canvasLogin = null;
+let googleLogin = null;
+
+let _brightCourses = [];
+let _canvasCourses = [];
 
 //TODO store brightspace courses
 
@@ -20,12 +28,12 @@ let googleBtn = "";
 window.onload = function() {
    init();
 
-   document.querySelector('.brightBtn').addEventListener('click', () => {
+   brightBtn.addEventListener('click', () => {
       loginBrightspace();
    });
 
-   document.querySelector('.canvasBtn').addEventListener('click', () => {
-      //Stuff goes here
+   canvasBtn.addEventListener('click', () => {
+      loginCanvas();
    });
 
    googleBtn.addEventListener('click', () => {
@@ -35,38 +43,35 @@ window.onload = function() {
    });
 
    syncBtn.addEventListener('click', () => {
-      
-      console.log('sync button');
+      getEnrollment();
+      getCanvasEnrollment();
    })
 };
 
 
 async function init(){
-   checkLoginStatus();
    brightBtn = document.querySelector('.brightBtn');
    canvasBtn = document.querySelector('.canvasBtn');
    googleBtn = document.querySelector('.googleBtn');
    syncBtn = document.querySelector('.syncBtn');
    
-   try{
-      loginBrightspace();
-      loginCanvas();
-   }
-   catch(error){
-      console.log(error);
-   }
-   console.log(_userBrightspace);
-   console.log(_userCanvas);
+   brightLogin = document.querySelector('.brightLogin');
+   canvasLogin = document.querySelector('.canvasLogin');
+   googleLogin = document.querySelector('.googleLogin');
+
+   await checkLoginStatus();
+   renderWelcome();
 };
 
-function renderWelcome(username){
+function renderWelcome(){
+   let username = _userBrightspace || _userCanvas || _userGoogle;
    let welcome = document.querySelector('.welcome');
-   
-   try{
-      welcome.innerHTML = `Welcome, ${username}!`
-   }catch{      
+   if(username != null){
+      welcome.innerHTML = `Welcome, ${username}!`;
+   }else{
       welcome.innerHTML = `Welcome, please log in!`;
-   }
+   }      
+   
 } 
 
 function getJSON(url){
@@ -91,51 +96,122 @@ function getText(url){
 
 async function loginBrightspace(){
    try{ 
-      _userBrightspace = await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
-      renderWelcome(_userBrightspace.FirstName);
-
-      let login = document.querySelector('.brightLogin');
-      login.innerHTML = `Logged in! ✔️`;
-      checkLoginStatus();
-   }
-   catch{
-         console.log("Did not return user. Not logged in, maybe?");
-         console.log("Error: " + error);
+      await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami")
+      .then(response => {
+         console.log(response);
+      })
+      .catch(error => {
+         console.log(error);
          chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: true});
-         checkLoginStatus();
+      })
+      checkLoginStatus();
+   }catch(error){
+      console.log("Did not return user. Not logged in, maybe?");
+      console.log("Error: " + error);
+      chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: true});
+      checkLoginStatus();
    }
 }
 
 async function loginCanvas(){
    try {
       let url = "https://byui.instructure.com/api/v1/users/self";
-      let _userCanvas = JSON.parse((await getText(url)).split(";")[1]);
-
-      let login = document.querySelector('.canvasLogin');
-      login.innerHTML = 'Logged in! ✔️'; 
+      _userCanvas = JSON.parse((await getText(url)).split(";")[1]).name;
+      // console.log(_userCanvas);
+      showLoggedIn(canvasLogin, canvasBtn);
       checkLoginStatus();
    } catch (error) {
       console.log("Did not return Canvas user. Not logged in, maybe?");
       console.log("Error: " + error);
-      chrome.tabs.create({url: 'https://byui.instructure.com/', active: true});
+      chrome.tabs.create({url: 'https://byui.instructure.com/', active: false});
+      showNotLoggedIn(canvasLogin,canvasBtn);
       checkLoginStatus();
    }
 }
 
-function checkLoginStatus(){
+function showLoggedIn(element,btn){
+   element.innerHTML = 'Logged in! ✔️'; 
+   btn.style.visibility = "hidden";
+}
+
+function showNotLoggedIn(element,btn){
+   element.innerHTML = 'Not logged in! ❌'
+   btn.style.visibility = 'visible';
+}
+
+async function checkLoginStatus(){
+   if(_userBrightspace == null){
+      try{
+         let user =  await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
+         //console.log(user);
+         _userBrightspace = user.FirstName;
+         showLoggedIn(brightLogin, brightBtn);
+      }catch(error){
+         showNotLoggedIn(brightLogin, brightBtn);
+         console.log(error);
+      }
+   }
+   
+   if(_userCanvas == null){
+      let response =  await getText("https://byui.instructure.com/api/v1/users/self");
+      let name = JSON.parse(response.split(";")[1]).name;
+      _userCanvas = name;
+      if(_userCanvas != null){
+         showLoggedIn(canvasLogin, canvasBtn);
+      }
+   }else{
+      showLoggedIn(canvasLogin, canvasBtn);
+   }
+   
+   let test = false;
    if(_userBrightspace && _userCanvas){
-      syncBtn.disabled = true;
-      console.log(_userBrightspace);
-      syncBtn.classList('btn-secondary');
-      syncBtn.classList('btn-success');
+      test = true;
+   };
+
+   if(_userBrightspace != null && _userCanvas != null){
+      syncBtn.disabled = false;
+      syncBtn.classList.remove('btn-secondary');
+      syncBtn.classList.add('btn-success');
    }
 }
 
 async function getEnrollment(){
-
-   let date = new Date().getTime();
-   let results = await getJSON(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/?startDateTime=${date}`);
-   return results.Items;
-}
+   const BUFFER = 7885000000;
+   let startDate = Date.now() - BUFFER;
+   let endDate = Date.now() + BUFFER;
+   console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
+   await getJSON(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/?orgUnitTypeId=3&sortBy=-EndDate`)
+   .then( results =>{
+      let array = [];
+      for(let item of results.Items){
+         if(item.Access.StartDate != null || item.Access.EndDate != null){
+            let temp = {}
+            temp.name = item.OrgUnit.Name;
+            temp.id = item.OrgUnit.Id;
+            array.push(item);
+            }
+      }
+      //TODO Store only the relevant data from the query into an array of objects;
+      console.log(array);
+      
+      
+      console.log(results);
+   })
+   .catch(error => {
+      console.log(error);
+   })
    
-  //Canvas token - 	10706~cJCvI2tnXLICE4JGWZTLzL3N9FjqXlf1L1cQDXudI32o7xwd8aExBrack7djOU2e
+}
+async function getCanvasEnrollment(){
+   
+   await getText("https://byui.instructure.com/api/v1/users/self/enrollments")
+   .then( results => {
+      console.log(JSON.parse(results.split(";")[1]));
+     
+   })
+   .catch(error => {
+      console.log(error);
+   })
+   // let courses = JSON.parse(response.split(";")[1]).name;
+   //console.log(courses);
+}
