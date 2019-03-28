@@ -77,7 +77,12 @@ function renderWelcome(){
 function getJSON(url){
    return fetch(url)
       .then(response =>{
-         return response.json();
+         if(response.ok){
+            return response.json();
+         }
+         else{
+            throw Error(response.statusText);
+         }
       })
       .catch(error => {
          console.log(error);
@@ -95,21 +100,12 @@ function getText(url){
 }
 
 async function loginBrightspace(){
+   //FIXME Not woking properly when logged off.
    try{ 
-      await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami")
-      .then(response => {
-         console.log(response);
-      })
-      .catch(error => {
-         console.log(error);
-         chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: true});
-      })
-      checkLoginStatus();
+      chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: true});
    }catch(error){
       console.log("Did not return user. Not logged in, maybe?");
-      console.log("Error: " + error);
-      chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: true});
-      checkLoginStatus();
+      console.log("Error: " + error);      
    }
 }
 
@@ -176,20 +172,26 @@ async function checkLoginStatus(){
 }
 
 async function getEnrollment(){
-   const BUFFER = 7885000000;
-   let startDate = Date.now() - BUFFER;
-   let endDate = Date.now() + BUFFER;
+   let startDate = new Date();
+   let endDate = new Date();
+   startDate.setMonth(startDate.getMonth() - 3);
+   endDate.setMonth(endDate.getMonth() + 3);
+   
+   let testDate = new Date()
+
    console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
-   await getJSON(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/?orgUnitTypeId=3&sortBy=-EndDate`)
+   console.log(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/?orgUnitTypeId=3&sortBy=-EndDate&startDateTime=${testDate.toISOString()}&endDateTime=${endDate.toISOString()}`)
+   
+   await getJSON(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/?orgUnitTypeId=3&sortBy=-EndDate&startDateTime=${testDate.toISOString()}&endDateTime=${endDate.toISOString}`)
    .then( results =>{
       let array = [];
       for(let item of results.Items){
          if(item.Access.StartDate != null || item.Access.EndDate != null){
-            let temp = {}
+            let temp = {};
             temp.name = item.OrgUnit.Name;
             temp.id = item.OrgUnit.Id;
             array.push(item);
-            }
+         }
       }
       //TODO Store only the relevant data from the query into an array of objects;
       console.log(array);
@@ -212,6 +214,5 @@ async function getCanvasEnrollment(){
    .catch(error => {
       console.log(error);
    })
-   // let courses = JSON.parse(response.split(";")[1]).name;
-   //console.log(courses);
+
 }
