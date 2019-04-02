@@ -4,6 +4,7 @@ body{
    padding: 5px;
    height: 400px;
    width: 350px;
+   background-image: linear-gradient(LightSteelBlue,white);
 }
 
 h5{
