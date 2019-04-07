@@ -6,6 +6,7 @@
    "oauth2":{
       "client_id": "838303626781-9dd2jkscnnrto6spsb4esbo97dfq1p9h.apps.googleusercontent.com",
       "scopes": [
+         "https://www.googleapis.com/auth/calendar",
          "https://www.googleapis.com/auth/calendar.settings.readonly",
          "https://www.googleapis.com/auth/calendar.events"
       ]
@@ -13,7 +14,7 @@
    "content_scripts": [
       {
          "matches": ["http://*/*", "https://*/*"],
-         "js": ["oauth.js", "background.js"]
+         "js": ["background.js"]
       }
    ],
    "browser_action": {
@@ -21,14 +22,8 @@
       "default_title": "Sync to your calendar"
    },
    "permissions":[
-      "activeTab", 
-      "declarativeContent",
       "identity",
-      "tabs",
-      "cookies",
-      "http://*/*",
-      "https://*/*",   
-      "storage"
+      "identity.email"
    ],
    "manifest_version": 2
 }

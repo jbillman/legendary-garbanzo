@@ -1,4 +1,4 @@
-let seaweed = 3000;
+let seaweed = 4118;
 let soda_ash = 2801;
 
 function calculateXp(seaweed,soda_ash){

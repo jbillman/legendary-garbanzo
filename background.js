@@ -1,6 +1,5 @@
 let _userBrightspace = null;
 let _userCanvas = null;
-let _userGoogle = null;
 
 let syncBtn = null;
 let brightBtn = null;
@@ -12,8 +11,9 @@ let canvasLogin = null;
 let googleLogin = null;
 
 let _semester = ""
-
 let _courses = [];
+let _assignments = [];
+let _calendarId = null;
 
 
 let semesters = [
@@ -48,12 +48,6 @@ let semesters = [
       },
 ]
 
-// grab assignments
-
-//TODO grab brightspace homework
-
-//TODO grab canvas homework
-
 window.onload = function() {
    init();
 
@@ -67,18 +61,26 @@ window.onload = function() {
 
    googleBtn.addEventListener('click', () => {
       chrome.identity.getAuthToken({interactive: true}, token => {
-         console.log(token);
+         if(chrome.runtime.lastError) {
+            console.log(chrome.runtime.lastError.message);
+         }
       });
    });
 
    syncBtn.addEventListener('click', async () => {
-      getBrightspaceEnrollment();
-      await getCanvasEnrollment();
-      console.log(_courses);
-
+      if(_courses.length == 0){
+         await getBrightspaceEnrollment();
+         await getCanvasEnrollment();
+         if(_assignments.length == 0){
+            await getHomework(_courses);
+         }
+      }
+      chrome.identity.getAuthToken({interactive: true}, async token => {
+         await createHomeworkCalendar(token);
+         await getCalendarEvents(token, _calendarId);
+      })
    })
 };
-
 
 async function init(){
    brightBtn = document.querySelector('.brightBtn');
@@ -89,18 +91,18 @@ async function init(){
    brightLogin = document.querySelector('.brightLogin');
    canvasLogin = document.querySelector('.canvasLogin');
    googleLogin = document.querySelector('.googleLogin');
-
-   getCurrentSemester();
-
    await checkLoginStatus();
-   renderWelcome();
+   
 };
 
 function renderWelcome(){
-   let username = _userBrightspace || _userCanvas || _userGoogle;
+   let username = _userBrightspace || _userCanvas||_userGoogle;
    let welcome = document.querySelector('.welcome');
    let heading = document.querySelector('.heading');
    let semester = document.createElement('h5');
+   
+   getCurrentSemester();
+   
    semester.innerHTML = _semester.name;
    heading.appendChild(semester);
    if(username != null){
@@ -111,30 +113,30 @@ function renderWelcome(){
    
 } 
 
-function getJSON(url){
-   return fetch(url)
-      .then(response =>{
-         if(response.ok){
-            return response.json();
-         }
-         else{
-            throw Error(response.statusText);
-         }
-      })
-      .catch(error => {
-         console.log(error);
-      });
+function getJSON(url, init = null){
+   return fetch(url, init)
+   .then(response =>{
+      if(response.ok){
+         return response.json();
+      }
+      else{
+         throw Error(response.status + ": " + response.statusText);
+      }
+   })
+   .catch(Error => {
+      console.log(Error);
+   });
 }
 
-function getText(url){
-   return fetch(url)
+function getText(url, init = null){
+   return fetch(url, init)
       .then(response =>{
          if(response.ok){
             return response.text();
 
          }
          else{
-            throw Error(response.statusText);
+            throw Error(response.status + ": " + response.statusText);
          }
       })
       .catch(error => {
@@ -145,7 +147,6 @@ function getText(url){
 function getCurrentSemester(){
    let current = new Date();
    for (let semester of semesters) {
-      // console.log(`Semester Start: ${semester.startDate.toISOString()} Semester End: ${semester.endDate.toISOString()}`);
       if(current > semester.startDate && current < semester.endDate){
          _semester = semester;
       }
@@ -163,25 +164,28 @@ function showNotLoggedIn(element,btn){
 }
 
 async function checkLoginStatus(){
+   //check for Brightspace user
    if(_userBrightspace == null){
       try{
-         let user =  await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
-         // console.log(user);
+         let user = await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
          _userBrightspace = user.FirstName;
          showLoggedIn(brightLogin, brightBtn);
+         checkSyncButton();
       }catch(error){
          showNotLoggedIn(brightLogin, brightBtn);
          console.log(error);
       }
    }
    
+   //check for Canvas user
    if(_userCanvas == null){
       try{
-            let response =  await getText("https://byui.instructure.com/api/v1/users/self");
-            let name = JSON.parse(response.split(";")[1]).name;
+            let response = await getText("https://byui.instructure.com/api/v1/users/self");
+            let name = JSON.parse(response.split("while(1);")[1]).name;
             _userCanvas = name;
          if(_userCanvas != null){
             showLoggedIn(canvasLogin, canvasBtn);
+            checkSyncButton();
          }else{
             showNotLoggedIn(canvasLogin, canvasBtn);
          }
@@ -192,11 +196,33 @@ async function checkLoginStatus(){
       }
    }
 
-   if(_userBrightspace != null && _userCanvas != null){
-      syncBtn.disabled = false;
-      syncBtn.classList.remove('btn-secondary');
-      syncBtn.classList.add('btn-success');
-   }
+   //check for Google user
+   await chrome.identity.getAuthToken({interactive: true}, token => {
+      if(!token) {
+         console.log('not signed in')
+         showNotLoggedIn(googleLogin, googleBtn);
+      } else {
+         chrome.identity.getProfileUserInfo( userInfo => {
+            _userGoogle = userInfo.email;
+            showLoggedIn(googleLogin, googleBtn);
+            checkSyncButton();
+            renderWelcome();
+            
+         })
+      }
+   });
+}
+
+function checkSyncButton(){
+  chrome.identity.getAuthToken({interactive: true}, token => {
+      if(token){
+         if(_userBrightspace != null && _userCanvas != null){
+            syncBtn.disabled = false;
+            syncBtn.classList.remove('btn-secondary');
+            syncBtn.classList.add('btn-success');
+         }      
+      }
+   });
 }
 
 async function getBrightspaceEnrollment(){   
@@ -212,10 +238,9 @@ async function getBrightspaceEnrollment(){
                temp.id = item.OrgUnit.Id;      
                temp.source = "brightspace";
                _courses.push(temp);
-            }
+             }
          }
       }
-      console.log(results);
    })
    .catch(error => {
       console.log(error);
@@ -227,7 +252,7 @@ async function getCanvasEnrollment(){
    await getText('https://byui.instructure.com/api/v1/users/self/courses')
    .then( results => {
       let array = [];
-      let courses = JSON.parse(results.split(";")[1]);
+      let courses = JSON.parse(results.split("while(1);")[1]);
       for(let item of courses){
          let temp = {};
          temp.startDate = new Date(item.start_at);
@@ -238,7 +263,6 @@ async function getCanvasEnrollment(){
             _courses.push(temp);
          }
       }
-      console.log(courses);
    })
    .catch(error => {
       console.log(error);
@@ -246,13 +270,193 @@ async function getCanvasEnrollment(){
 
 }
 
-async function getCourseInfo(course_id){
-   await getText(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/${course_id}`)
+async function getHomework(courses){
+   let brightspaceIds = "";
+   let first = true;
+   for(let item of courses){
+      if(item.source == "brightspace"){
+         if(first == true){
+            brightspaceIds = item.id;
+            first = false;
+         }
+         else{
+            brightspaceIds += `,${item.id}`;
+         }
+      }
+      else{
+         try{
+            await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
+            .then(response => {
+               let array = JSON.parse(response.split("while(1);")[1]);
+               for (const item of array) {
+                  let temp = {};
+                  temp.name = item.name;
+                  temp.course = getCourseName(item.course_id);
+                  temp.dueDate = new Date(item.due_at);
+                  temp.url = item.html_url
+                  _assignments.push(temp);
+                  }
+            })
+            .catch(error =>{
+               console.log(error);
+            })
+         }catch(Error){
+            console.log(Error);
+         }
+      }
+   }
+   try{
+      await getJSON(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
+      .then( response => {
+         for (const item of response.Objects) {  
+            let temp = {};
+            temp.name = item.ItemName;
+            temp.course = getCourseName(item.OrgUnitId);
+            temp.dueDate = new Date(item.DueDate);
+            temp.url = item.ItemUrl
+            _assignments.push(temp);
+         }
+      })
+      .catch(error => {
+         console.log(error);
+      })
+   }catch(Error){
+      console.log(Error);
+   }
+   
+}
+
+function getCourseName(courseId){
+   for (const course of _courses) {
+      if(courseId == course.id)  
+      return course.name;
+   }
+}
+
+async function createHomeworkCalendar(token){
+   try{
+      let init = {
+         method: 'GET',
+         async: true,
+         headers: {
+           Authorization: 'Bearer ' + token,
+           'Content-Type': 'application/json'
+         },
+         'contentType': 'json'
+       };
+      await getJSON('https://www.googleapis.com/calendar/v3/users/me/calendarList', init)
+      .then(async response => {
+         let timeZone = "";
+         for (const item of response.items) {
+            if(item.summary == "Homework"){
+               console.log('Homework already exists!');
+               _calendarId = item.id;
+               return true;   
+            }
+         }
+         let summary = {'summary':'Homework'};
+         init = {
+            method: 'POST',
+            async: true,
+            headers: {
+               Authorization: 'Bearer ' + token,
+               'Content-Type': 'application/json'
+            },
+            'contentType': 'json',
+            body: JSON.stringify(summary)
+         };
+         await getJSON("https://www.googleapis.com/calendar/v3/calendars",init)
+         .then(response => {
+            _calendarId = response.id;
+         })
+         .catch(error => {
+               console.log(error);
+         })  
+      })
+      .catch(error => {
+         console.log(error);
+      })
+   }catch(error){
+
+   }
+}
+
+async function getCalendarEvents(token, calendarId){
+   let init = {
+      method: 'GET',
+      async: true,
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      'contentType': 'json'
+   };
+   
+   await getJSON(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
    .then(response => {
-      
+      if(response.items.length != 0){
+         for (const item of _assignments) {
+            let exists = false;
+            for (const event of response.items) {
+               if(item.name == event.summary){
+                  console.log(`Already exists`);
+                  exists = true;
+               }
+            }
+            if(!exists){
+               createCalendarEvent(item, token, calendarId);
+            }
+         }
+      }
+     if(response.items.length == 0){
+         console.log("response length was 0");
+         for (const item of _assignments) {
+            createCalendarEvent(item, token, calendarId);
+         }
+      }
+      console.log("Done syncing!");
    })
    .catch(error => {
       console.log(error);
-   })
-   
+   });
+}
+
+async function createCalendarEvent(assignment, token, calendarId){
+   let startDate = new Date(assignment.dueDate)
+   startDate.setHours(assignment.dueDate.getHours() - 2);
+   let body = {
+      start: {
+         dateTime: startDate.toISOString()
+      },
+      end: {
+         dateTime: assignment.dueDate.toISOString()
+      },
+      description: `${assignment.course}: ${assignment.url}`, 
+      summary: assignment.name
+   }
+   let init = {
+      method: 'POST',
+      async: true,
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      'contentType': 'json',
+      body: JSON.stringify(body)
+   };
+   try{
+     fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
+      .then( response => {
+         if(response.ok)
+            console.log("created new Event");
+         else
+            console.log(response.json());
+      })
+      .catch(error => {
+         console.log(error);
+      })
+   }
+   catch(Error){
+      console.log(Error);
+   }
 }
