@@ -68,10 +68,13 @@ window.onload = function() {
    });
 
    syncBtn.addEventListener('click', async () => {
+      let element = document.querySelector('.syncResult');
+      element.innerHTML = "Syncing...";
       if(_courses.length == 0){
          await getBrightspaceEnrollment();
          await getCanvasEnrollment();
          if(_assignments.length == 0){
+            console.log(_courses);
             await getHomework(_courses);
          }
       }
@@ -91,6 +94,7 @@ async function init(){
    brightLogin = document.querySelector('.brightLogin');
    canvasLogin = document.querySelector('.canvasLogin');
    googleLogin = document.querySelector('.googleLogin');
+   console.log("Inside init");
    await checkLoginStatus();
    
 };
@@ -101,6 +105,7 @@ function renderWelcome(){
    let heading = document.querySelector('.heading');
    let semester = document.createElement('h5');
    
+   console.log("Inside Render Welcome");
    getCurrentSemester();
    
    semester.innerHTML = _semester.name;
@@ -169,6 +174,7 @@ async function checkLoginStatus(){
       try{
          let user = await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
          _userBrightspace = user.FirstName;
+         console.log(user);
          showLoggedIn(brightLogin, brightBtn);
          checkSyncButton();
       }catch(error){
@@ -183,6 +189,7 @@ async function checkLoginStatus(){
             let response = await getText("https://byui.instructure.com/api/v1/users/self");
             let name = JSON.parse(response.split("while(1);")[1]).name;
             _userCanvas = name;
+            console.log(_userCanvas);
          if(_userCanvas != null){
             showLoggedIn(canvasLogin, canvasBtn);
             checkSyncButton();
@@ -204,6 +211,7 @@ async function checkLoginStatus(){
       } else {
          chrome.identity.getProfileUserInfo( userInfo => {
             _userGoogle = userInfo.email;
+            console.log(_userGoogle);
             showLoggedIn(googleLogin, googleBtn);
             checkSyncButton();
             renderWelcome();
@@ -227,8 +235,9 @@ function checkSyncButton(){
 
 async function getBrightspaceEnrollment(){   
    await getJSON(`https://byui.brightspace.com/d2l/api/lp/1.9/enrollments/myenrollments/?orgUnitTypeId=3&sortBy=-EndDate`)
-   .then( results =>{
-      for(let item of results.Items){
+   .then( response =>{
+      console.log(response)
+      for(let item of response.Items){
          if(item.Access.StartDate != null || item.Access.EndDate != null){
             let temp = {};
             temp.startDate = new Date(item.Access.StartDate);
@@ -241,6 +250,7 @@ async function getBrightspaceEnrollment(){
              }
          }
       }
+      console.log(_courses);
    })
    .catch(error => {
       console.log(error);
@@ -250,9 +260,10 @@ async function getBrightspaceEnrollment(){
 
 async function getCanvasEnrollment(){
    await getText('https://byui.instructure.com/api/v1/users/self/courses')
-   .then( results => {
-      let array = [];
-      let courses = JSON.parse(results.split("while(1);")[1]);
+   .then( response => {
+      console.log(response);
+      let courses = JSON.parse(response.split("while(1);")[1]);
+      console.log(courses);
       for(let item of courses){
          let temp = {};
          temp.startDate = new Date(item.start_at);
@@ -263,6 +274,7 @@ async function getCanvasEnrollment(){
             _courses.push(temp);
          }
       }
+      console.log(_courses);
    })
    .catch(error => {
       console.log(error);
@@ -284,47 +296,61 @@ async function getHomework(courses){
          }
       }
       else{
-         try{
-            await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
-            .then(response => {
-               let array = JSON.parse(response.split("while(1);")[1]);
-               for (const item of array) {
-                  let temp = {};
-                  temp.name = item.name;
-                  temp.course = getCourseName(item.course_id);
-                  temp.dueDate = new Date(item.due_at);
-                  temp.url = item.html_url
-                  _assignments.push(temp);
+            try{
+               await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
+               .then(response => {
+                  let array = JSON.parse(response.split("while(1);")[1]);
+                  console.log(array);
+                  for (const item of array) {
+                     if(item.due_at != null){
+                        let temp = {};
+                        temp.name = item.name;
+                        temp.course = getCourseName(item.course_id);
+                        temp.dueDate = new Date(item.due_at);
+                        temp.url = item.html_url
+                        console.log(temp);
+                        _assignments.push(temp);
+                     }
                   }
-            })
-            .catch(error =>{
-               console.log(error);
-            })
-         }catch(Error){
-            console.log(Error);
-         }
+                     console.log(_assignments);
+               })
+               .catch(error =>{
+                  console.log(error);
+               })
+            }catch(Error){
+               console.log(Error);
+            }
       }
    }
    try{
-      await getJSON(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
-      .then( response => {
-         for (const item of response.Objects) {  
-            let temp = {};
-            temp.name = item.ItemName;
-            temp.course = getCourseName(item.OrgUnitId);
-            temp.dueDate = new Date(item.DueDate);
-            temp.url = item.ItemUrl
-            _assignments.push(temp);
-         }
-      })
-      .catch(error => {
-         console.log(error);
-      })
+      console.log(brightspaceIds);
+      if(brightspaceIds.length != 0){
+         await getJSON(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
+         .then( response => {
+            console.log(response);
+            for (const item of response.Objects) {  
+               if(item.DueDate != null){                 
+                  let temp = {};
+                  temp.name = item.ItemName;
+                  temp.course = getCourseName(item.OrgUnitId);
+                  temp.dueDate = new Date(item.DueDate);
+                  temp.url = item.ItemUrl
+                  console.log(temp);
+                  _assignments.push(temp);
+               }
+            }
+            console.log(_assignments);
+         })
+         .catch(error => {
+            console.log(error);
+         })
+      }
    }catch(Error){
       console.log(Error);
    }
-   
-}
+   }   
+
+
 
 function getCourseName(courseId){
    for (const course of _courses) {
@@ -394,6 +420,7 @@ async function getCalendarEvents(token, calendarId){
    
    await getJSON(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
    .then(response => {
+      let count = 1;
       if(response.items.length != 0){
          for (const item of _assignments) {
             let exists = false;
@@ -404,17 +431,19 @@ async function getCalendarEvents(token, calendarId){
                }
             }
             if(!exists){
-               createCalendarEvent(item, token, calendarId);
+               window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *250);
+               count++;
             }
          }
       }
      if(response.items.length == 0){
          console.log("response length was 0");
          for (const item of _assignments) {
-            createCalendarEvent(item, token, calendarId);
+            window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *250);
+            count++;
          }
       }
-      console.log("Done syncing!");
+      window.setTimeout(function () {renderFinished()}, count * 250);
    })
    .catch(error => {
       console.log(error);
@@ -459,4 +488,9 @@ async function createCalendarEvent(assignment, token, calendarId){
    catch(Error){
       console.log(Error);
    }
+}
+
+function renderFinished(){
+   let element = document.querySelector('.syncResult');
+   element.innerHTML = "Finished! ✔️";
 }
