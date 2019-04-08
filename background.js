@@ -94,7 +94,7 @@ async function init(){
    brightLogin = document.querySelector('.brightLogin');
    canvasLogin = document.querySelector('.canvasLogin');
    googleLogin = document.querySelector('.googleLogin');
-   console.log("Inside init");
+
    await checkLoginStatus();
    
 };
@@ -105,7 +105,6 @@ function renderWelcome(){
    let heading = document.querySelector('.heading');
    let semester = document.createElement('h5');
    
-   console.log("Inside Render Welcome");
    getCurrentSemester();
    
    semester.innerHTML = _semester.name;
@@ -174,7 +173,7 @@ async function checkLoginStatus(){
       try{
          let user = await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
          _userBrightspace = user.FirstName;
-         console.log(user);
+         
          showLoggedIn(brightLogin, brightBtn);
          checkSyncButton();
       }catch(error){
@@ -189,7 +188,6 @@ async function checkLoginStatus(){
             let response = await getText("https://byui.instructure.com/api/v1/users/self");
             let name = JSON.parse(response.split("while(1);")[1]).name;
             _userCanvas = name;
-            console.log(_userCanvas);
          if(_userCanvas != null){
             showLoggedIn(canvasLogin, canvasBtn);
             checkSyncButton();
@@ -261,9 +259,9 @@ async function getBrightspaceEnrollment(){
 async function getCanvasEnrollment(){
    await getText('https://byui.instructure.com/api/v1/users/self/courses')
    .then( response => {
-      console.log(response);
+      // console.log(response);
       let courses = JSON.parse(response.split("while(1);")[1]);
-      console.log(courses);
+      // console.log(courses);
       for(let item of courses){
          let temp = {};
          temp.startDate = new Date(item.start_at);
@@ -274,7 +272,7 @@ async function getCanvasEnrollment(){
             _courses.push(temp);
          }
       }
-      console.log(_courses);
+      // console.log(_courses);
    })
    .catch(error => {
       console.log(error);
@@ -289,18 +287,20 @@ async function getHomework(courses){
       if(item.source == "brightspace"){
          if(first == true){
             brightspaceIds = item.id;
+            console.log(item);
             first = false;
          }
          else{
+            console.log(item);
             brightspaceIds += `,${item.id}`;
          }
       }
       else{
             try{
-               await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
+               getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
                .then(response => {
                   let array = JSON.parse(response.split("while(1);")[1]);
-                  console.log(array);
+                  // console.log(array);
                   for (const item of array) {
                      if(item.due_at != null){
                         let temp = {};
@@ -308,11 +308,11 @@ async function getHomework(courses){
                         temp.course = getCourseName(item.course_id);
                         temp.dueDate = new Date(item.due_at);
                         temp.url = item.html_url
-                        console.log(temp);
+                        // console.log(temp);
                         _assignments.push(temp);
                      }
                   }
-                     console.log(_assignments);
+                     // console.log(_assignments);
                })
                .catch(error =>{
                   console.log(error);
@@ -325,9 +325,10 @@ async function getHomework(courses){
    try{
       console.log(brightspaceIds);
       if(brightspaceIds.length != 0){
+         console.log(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
          await getJSON(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
          .then( response => {
-            console.log(response);
+            // console.log(response);
             for (const item of response.Objects) {  
                if(item.DueDate != null){                 
                   let temp = {};
@@ -335,7 +336,7 @@ async function getHomework(courses){
                   temp.course = getCourseName(item.OrgUnitId);
                   temp.dueDate = new Date(item.DueDate);
                   temp.url = item.ItemUrl
-                  console.log(temp);
+                  // console.log(temp);
                   _assignments.push(temp);
                }
             }
@@ -431,7 +432,7 @@ async function getCalendarEvents(token, calendarId){
                }
             }
             if(!exists){
-               window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *250);
+               window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
                count++;
             }
          }
@@ -439,7 +440,7 @@ async function getCalendarEvents(token, calendarId){
      if(response.items.length == 0){
          console.log("response length was 0");
          for (const item of _assignments) {
-            window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *250);
+            window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
             count++;
          }
       }
