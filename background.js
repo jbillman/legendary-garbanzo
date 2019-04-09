@@ -19,31 +19,31 @@ let _calendarId = null;
 let semesters = [
       {
          name: "Winter 2019",
-         startDate: new Date('January 5, 2019 0:00:00'),
+         startDate: new Date('January 4, 2019 0:00:00'),
          endDate: new Date('April 18, 2019 0:00:00')
       },
    
       {
          name:"Spring 2019",
-         startDate: new Date('April 22, 2019 0:00:00'),
+         startDate: new Date('April 21, 2019 0:00:00'),
          endDate: new Date('August 1, 2019 0:00:00')
       },
    
       {
          name:"Summer 2019",
-         startDate: new Date('July 29, 2019 0:00:00'),
+         startDate: new Date('July 28, 2019 0:00:00'),
          endDate: new Date('September 19, 2019 0:00:00')
       },
      
       {
          name:"Fall 2019",
-         startDate: new Date('September 16, 2019 0:00:00'),
+         startDate: new Date('September 156, 2019 0:00:00'),
          endDate: new Date('December 27, 2019 0:00:00')
       },
    
       {
          name:"Winter 2020",
-         startDate: new Date('January 8, 2020 0:00:00'),
+         startDate: new Date('January 7, 2020 0:00:00'),
          endDate: new Date('April 16, 2020 0:00:00')
       },
 ]
@@ -257,22 +257,23 @@ async function getBrightspaceEnrollment(){
 }
 
 async function getCanvasEnrollment(){
-   await getText('https://byui.instructure.com/api/v1/users/self/courses')
+   await getText('https://byui.instructure.com/api/v1/users/self/courses?include[]=term')
    .then( response => {
       // console.log(response);
       let courses = JSON.parse(response.split("while(1);")[1]);
-      // console.log(courses);
+      console.log(courses);
       for(let item of courses){
+         // console.log(item);
          let temp = {};
          temp.startDate = new Date(item.start_at);
-         if(temp.startDate.getTime() >= _semester.startDate.getTime() && temp.startDate.getTime() <= _semester.endDate.getTime()){
+         if(item.term.name == _semester.name){
             temp.name = item.name;
             temp.id = item.id;
             temp.source = "canvas";
             _courses.push(temp);
          }
       }
-      // console.log(_courses);
+      console.log(_courses);
    })
    .catch(error => {
       console.log(error);
@@ -287,17 +288,17 @@ async function getHomework(courses){
       if(item.source == "brightspace"){
          if(first == true){
             brightspaceIds = item.id;
-            console.log(item);
+            // console.log(item);
             first = false;
          }
          else{
-            console.log(item);
+            // console.log(item);
             brightspaceIds += `,${item.id}`;
          }
       }
       else{
             try{
-               getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
+               await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
                .then(response => {
                   let array = JSON.parse(response.split("while(1);")[1]);
                   // console.log(array);
@@ -373,7 +374,6 @@ async function createHomeworkCalendar(token){
        };
       await getJSON('https://www.googleapis.com/calendar/v3/users/me/calendarList', init)
       .then(async response => {
-         let timeZone = "";
          for (const item of response.items) {
             if(item.summary == "Homework"){
                console.log('Homework already exists!');
@@ -422,17 +422,32 @@ async function getCalendarEvents(token, calendarId){
    await getJSON(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
    .then(response => {
       let count = 1;
+      let event1 = {};
       if(response.items.length != 0){
+         console.log(response);
          for (const item of _assignments) {
             let exists = false;
             for (const event of response.items) {
+               event1 = event;
                if(item.name == event.summary){
-                  console.log(`Already exists`);
-                  exists = true;
+                  // console.log("name exists");
+                  // console.log((event.description).split('->')[1]);
+                  if(item.url == (event.description).split('->')[1]){
+                     // console.log(`${event.summary} already exists`);
+                     // console.log("already exists");
+                     exists = true;
+                     break;
+                  }
+
+                  console.log(`item.url: ${item.url} event.description: ${(event.description).split('->')[1]}`);
                }
             }
             if(!exists){
-               window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
+               // console.log(`Created assignment: ${item.name}`);
+               
+               // console.log(`Created assignment`);
+
+               window.setTimeout(function () {createCalendarEvent(item, token, calendarId,event1)}, count *300);
                count++;
             }
          }
@@ -440,18 +455,22 @@ async function getCalendarEvents(token, calendarId){
      if(response.items.length == 0){
          console.log("response length was 0");
          for (const item of _assignments) {
+            console.log(`Created assignment: ${item.name}`);
+            // console.log(item);
+            // console.log(`Created assignment`);
+
             window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
             count++;
          }
       }
-      window.setTimeout(function () {renderFinished()}, count * 250);
+      window.setTimeout(function () {renderFinished()}, count * 300);
    })
    .catch(error => {
       console.log(error);
    });
 }
 
-async function createCalendarEvent(assignment, token, calendarId){
+async function createCalendarEvent(assignment, token, calendarId, event){
    let startDate = new Date(assignment.dueDate)
    startDate.setHours(assignment.dueDate.getHours() - 2);
    let body = {
@@ -461,7 +480,7 @@ async function createCalendarEvent(assignment, token, calendarId){
       end: {
          dateTime: assignment.dueDate.toISOString()
       },
-      description: `${assignment.course}: ${assignment.url}`, 
+      description: `${assignment.course}->${assignment.url}`, 
       summary: assignment.name
    }
    let init = {
@@ -495,3 +514,6 @@ function renderFinished(){
    let element = document.querySelector('.syncResult');
    element.innerHTML = "Finished! ✔️";
 }
+
+
+//TODO account for multiple assignments with the same name
