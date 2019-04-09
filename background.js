@@ -20,7 +20,7 @@ let semesters = [
       {
          name: "Winter 2019",
          startDate: new Date('January 4, 2019 0:00:00'),
-         endDate: new Date('April 18, 2019 0:00:00')
+         endDate: new Date('April 21, 2019 0:00:00')
       },
    
       {
@@ -37,8 +37,8 @@ let semesters = [
      
       {
          name:"Fall 2019",
-         startDate: new Date('September 156, 2019 0:00:00'),
-         endDate: new Date('December 27, 2019 0:00:00')
+         startDate: new Date('September 16, 2019 0:00:00'),
+         endDate: new Date('January 7, 2019 0:00:00')
       },
    
       {
@@ -239,8 +239,8 @@ async function getBrightspaceEnrollment(){
          if(item.Access.StartDate != null || item.Access.EndDate != null){
             let temp = {};
             temp.startDate = new Date(item.Access.StartDate);
-            temp.endDate = new Date(item.Access.EndDate);
-            if(temp.startDate.getTime() >= _semester.startDate.getTime() && temp.endDate.getTime() <= _semester.endDate.getTime()){
+            // console.log(temp.startDate >= _semester.startDate.getTime());
+            if(temp.startDate.getTime() >= _semester.startDate.getTime() && temp.startDate.getTime() <= _semester.endDate.getTime()){
                temp.name = item.OrgUnit.Name;
                temp.id = item.OrgUnit.Id;      
                temp.source = "brightspace";
@@ -419,7 +419,7 @@ async function getCalendarEvents(token, calendarId){
       'contentType': 'json'
    };
    
-   await getJSON(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
+   await getJSON(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?maxResults=1000`, init)
    .then(response => {
       let count = 1;
       let event1 = {};
@@ -427,29 +427,39 @@ async function getCalendarEvents(token, calendarId){
          console.log(response);
          for (const item of _assignments) {
             let exists = false;
+            // let array = [];
+            // array.push({name:item.name, course:item.course, url:item.url}) 
             // console.log("start");
             // console.log(item.name);
-            for (const event of response.items) {               
+            for (const event of response.items) {
+               let course = (event.description).split('->')[0];
+               let url =  (event.description).split('->')[1];
                // console.log(event.summary);
                if(item.name == event.summary){
-                  console.log(`item.name: ${item.name} -> event.summary: ${event.summary}`)
-                  console.log("name exists");
-                 
-                  if(item.url == (event.description).split('->')[1]){
+                  // console.log(`item.name: ${item.name} -> event.summary: ${event.summary}`)
+                  // console.log("name exists");
+                  
+                  // console.log(course);
+                  
+                  if(item.url == url){
+
                      // console.log(`${event.summary} already exists`);
                      console.log("already exists");
                      exists = true;
                      break;
                   }
-
-                  console.log(`item.url: ${item.url} event.description: ${(event.description).split('->')[1]}`);
                }
+               // array.push(
+               //    {
+               //       name:{name:event.summary,sameName: (item.name==event.summary)}, 
+               //       course:{course:course, sameCourse:(item.course==course)},
+               //       url:{url:url, sameCourse:(item.url==url)}
+               //    });
             }
             if(!exists){
                // console.log(`Created assignment: ${item.name}`);
-               
-               // console.log(`Created assignment`);
-
+               console.log(`Created assignment`);
+               // console.log(array);
                window.setTimeout(function () {createCalendarEvent(item, token, calendarId,event1)}, count *300);
                count++;
             }
@@ -459,9 +469,9 @@ async function getCalendarEvents(token, calendarId){
      if(response.items.length == 0){
          console.log("response length was 0");
          for (const item of _assignments) {
-            console.log(`Created assignment: ${item.name}`);
+            // console.log(`Created assignment: ${item.name}`);
             // console.log(item);
-            // console.log(`Created assignment`);
+            console.log(`Created assignment`);
 
             window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
             count++;
@@ -501,7 +511,8 @@ async function createCalendarEvent(assignment, token, calendarId){
      fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
       .then( response => {
          if(response.ok)
-            console.log(`created new Event: ${}`);
+            // console.log(`created new Event: ${assignment.name} : ${assignment.dueDate}`);
+            console.log("successfully created new event")
          else
             console.log(response.json());
       })
@@ -518,6 +529,3 @@ function renderFinished(){
    let element = document.querySelector('.syncResult');
    element.innerHTML = "Finished! ✔️";
 }
-
-
-//TODO account for multiple assignments with the same name
