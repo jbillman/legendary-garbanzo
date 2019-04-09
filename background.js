@@ -427,14 +427,17 @@ async function getCalendarEvents(token, calendarId){
          console.log(response);
          for (const item of _assignments) {
             let exists = false;
-            for (const event of response.items) {
-               event1 = event;
+            // console.log("start");
+            // console.log(item.name);
+            for (const event of response.items) {               
+               // console.log(event.summary);
                if(item.name == event.summary){
-                  // console.log("name exists");
-                  // console.log((event.description).split('->')[1]);
+                  console.log(`item.name: ${item.name} -> event.summary: ${event.summary}`)
+                  console.log("name exists");
+                 
                   if(item.url == (event.description).split('->')[1]){
                      // console.log(`${event.summary} already exists`);
-                     // console.log("already exists");
+                     console.log("already exists");
                      exists = true;
                      break;
                   }
@@ -450,6 +453,7 @@ async function getCalendarEvents(token, calendarId){
                window.setTimeout(function () {createCalendarEvent(item, token, calendarId,event1)}, count *300);
                count++;
             }
+            // console.log("end")
          }
       }
      if(response.items.length == 0){
@@ -470,7 +474,7 @@ async function getCalendarEvents(token, calendarId){
    });
 }
 
-async function createCalendarEvent(assignment, token, calendarId, event){
+async function createCalendarEvent(assignment, token, calendarId){
    let startDate = new Date(assignment.dueDate)
    startDate.setHours(assignment.dueDate.getHours() - 2);
    let body = {
@@ -497,7 +501,7 @@ async function createCalendarEvent(assignment, token, calendarId, event){
      fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
       .then( response => {
          if(response.ok)
-            console.log("created new Event");
+            console.log(`created new Event: ${}`);
          else
             console.log(response.json());
       })
