@@ -1,33 +1,35 @@
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Document</title>
-    <script type="text/javascript" src="background.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <link rel="stylesheet" href="style.css">
+   <meta charset="utf-8">
+   <title>Homework Sync</title>
+   <script type="text/javascript" src="index.js"></script>
+   <link href="https://fonts.googleapis.com/css?family=Montserrat|Roboto" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+   <link rel="stylesheet" type="text/css" href="loading.css"/>
+   <link rel="stylesheet" type="text/css" href="loading-btn.css"/>
+   <link rel="stylesheet" href="style.css">
+
 
 </head>
 <body>
    <div class="heading">
-      <h5><strong>Sync to your Calendar</strong></h5>
+      <h5>Sync to your Calendar</h5>
       
    </div>  
    <div class="wrapper col-md-12">
-      <h4 class="welcome"></h4>
-      <h5><span>I-Learn: </span><span class="brightLogin">Not logged in! ❌</span></h5>
-      <button class="brightBtn btn-success"><strong>I-Learn Login</strong></button>
-      <h5><span>Canvas: </span><span class="canvasLogin">Not logged in! ❌</span></h5>
-      <button class="canvasBtn btn-warning"><strong>Canvas Login</strong></button>
-      <h5><span>Google: </span><span class="googleLogin">Not logged in! ❌</span></h5>
-      <button class="googleBtn btn-primary"><strong>Calendar Login</strong></button>
+      <h5 class="welcome"></h5>
+      <div><p class="brightLogin"><i class="material-icons">check_circle</i> Logged into Brightspace </p></div>
+      <button class="brightBtn login btn">I-Learn Login</button>
+      <div><p class="canvasLogin"><i class="material-icons">check_circle</i> Logged into Canvas </p></div>
+      <button class="canvasBtn login btn">Canvas Login</button>
+      <div><p class="googleLogin"><i class="material-icons">check_circle</i> Logged into Google </p></div>
+      <button class="googleBtn login btn">Calendar Login</button>
    </div>
-   <div class="wrapper col-md-12">
+   <div class="wrapper col-md-12"> 
       <div class="sync">
-         <h5>Sync your homework to your calendar!</h5>
-         <div style="display:inline-flex">
-            <button class="syncBtn btn-secondary" disabled><strong>Sync to Google</strong></button>
-            <h5 class="syncResult"></h5>
-         </div>
+         <p>Sync your homework to your calendar!</p>
+         <button class="syncBtn disabled btn btn-default" disabled>Sync to Google</button>
       </div>
    </div>
 </body>

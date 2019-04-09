@@ -50,7 +50,6 @@ let semesters = [
 
 window.onload = function() {
    init();
-
    brightBtn.addEventListener('click', () => {
       chrome.tabs.create({url: 'https://byui.brightspace.com/d2l/home', active: true});
    });
@@ -68,8 +67,9 @@ window.onload = function() {
    });
 
    syncBtn.addEventListener('click', async () => {
-      let element = document.querySelector('.syncResult');
-      element.innerHTML = "Syncing...";
+      syncBtn.innerHTML = "Syncing <div class='ld ld-ring ld-spin' style='font-size:3em'></div>";
+      syncBtn.classList.add("ld-over-full-inverse");
+      syncBtn.classList.add("running");
       if(_courses.length == 0){
          await getBrightspaceEnrollment();
          await getCanvasEnrollment();
@@ -103,7 +103,8 @@ function renderWelcome(){
    let username = _userBrightspace || _userCanvas||_userGoogle;
    let welcome = document.querySelector('.welcome');
    let heading = document.querySelector('.heading');
-   let semester = document.createElement('h5');
+   let semester = document.createElement('h6');
+   semester.classList.add('semester');
    
    getCurrentSemester();
    
@@ -157,16 +158,6 @@ function getCurrentSemester(){
    }
 }
 
-function showLoggedIn(element,btn){
-   element.innerHTML = 'Logged in! ✔️'; 
-   btn.style.visibility = "hidden";
-}
-
-function showNotLoggedIn(element,btn){
-   element.innerHTML = 'Not logged in! ❌'
-   btn.style.visibility = 'visible';
-}
-
 async function checkLoginStatus(){
    //check for Brightspace user
    if(_userBrightspace == null){
@@ -174,10 +165,12 @@ async function checkLoginStatus(){
          let user = await getJSON("https://byui.brightspace.com/d2l/api/lp/1.9/users/whoami");
          _userBrightspace = user.FirstName;
          
-         showLoggedIn(brightLogin, brightBtn);
+         brightLogin.style.visibility = 'visible'; 
+         brightBtn.style.visibility = "hidden";
          checkSyncButton();
       }catch(error){
-         showNotLoggedIn(brightLogin, brightBtn);
+         brightLogin.style.visibility = 'hidden'
+         brightBtn.style.visibility = 'visible';
          console.log(error);
       }
    }
@@ -189,14 +182,17 @@ async function checkLoginStatus(){
             let name = JSON.parse(response.split("while(1);")[1]).name;
             _userCanvas = name;
          if(_userCanvas != null){
-            showLoggedIn(canvasLogin, canvasBtn);
+            canvasLogin.style.visibility = 'visible'; 
+            canvasBtn.style.visibility = "hidden";
             checkSyncButton();
          }else{
-            showNotLoggedIn(canvasLogin, canvasBtn);
+            canvasLogin.style.visibility = 'hidden'; 
+            canvasBtn.style.visibility = 'visible';
          }
       }
       catch(Error){
-         showNotLoggedIn(canvasLogin,canvasBtn);
+         canvasLogin.style.visibility = 'hidden'; 
+         canvasBtn.style.visibility = 'visible';
          console.log(Error);
       }
    }
@@ -205,12 +201,14 @@ async function checkLoginStatus(){
    await chrome.identity.getAuthToken({interactive: true}, token => {
       if(!token) {
          console.log('not signed in')
-         showNotLoggedIn(googleLogin, googleBtn);
+         googleLogin.style.visibility = 'hidden'
+         googleBtn.style.visibility = 'visible';
       } else {
          chrome.identity.getProfileUserInfo( userInfo => {
             _userGoogle = userInfo.email;
             console.log(_userGoogle);
-            showLoggedIn(googleLogin, googleBtn);
+            googleLogin.style.visibility = 'visible'; 
+            googleBtn.style.visibility = "hidden";
             checkSyncButton();
             renderWelcome();
             
@@ -224,8 +222,8 @@ function checkSyncButton(){
       if(token){
          if(_userBrightspace != null && _userCanvas != null){
             syncBtn.disabled = false;
-            syncBtn.classList.remove('btn-secondary');
-            syncBtn.classList.add('btn-success');
+            syncBtn.classList.remove('disabled');
+            // syncBtn.classList.add('btn-success');
          }      
       }
    });
@@ -526,6 +524,6 @@ async function createCalendarEvent(assignment, token, calendarId){
 }
 
 function renderFinished(){
-   let element = document.querySelector('.syncResult');
-   element.innerHTML = "Finished! ✔️";
+   syncBtn.innerHTML = "Done!";
+   syncBtn.classList.remove("running")
 }
