@@ -138,7 +138,6 @@ function getText(url, init = null){
       .then(response =>{
          if(response.ok){
             return response.text();
-
          }
          else{
             throw Error(response.status + ": " + response.statusText);
@@ -239,6 +238,7 @@ async function getBrightspaceEnrollment(){
             temp.startDate = new Date(item.Access.StartDate);
             // console.log(temp.startDate >= _semester.startDate.getTime());
             if(temp.startDate.getTime() >= _semester.startDate.getTime() && temp.startDate.getTime() <= _semester.endDate.getTime()){
+               console.log(item);
                temp.name = item.OrgUnit.Name;
                temp.id = item.OrgUnit.Id;      
                temp.source = "brightspace";
@@ -255,7 +255,7 @@ async function getBrightspaceEnrollment(){
 }
 
 async function getCanvasEnrollment(){
-   await getText('https://byui.instructure.com/api/v1/users/self/courses?include[]=term')
+   await getText('https://byui.instructure.com/api/v1/users/self/courses?enrollment_state=active&include[]=term')
    .then( response => {
       // console.log(response);
       let courses = JSON.parse(response.split("while(1);")[1]);
@@ -296,7 +296,7 @@ async function getHomework(courses){
       }
       else{
             try{
-               await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=100`)
+               await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=200`)
                .then(response => {
                   let array = JSON.parse(response.split("while(1);")[1]);
                   // console.log(array);
