@@ -436,13 +436,16 @@ async function getCalendarEvents(token, calendarId){
                if(item.name == event.summary){
                   // console.log(`item.name: ${item.name} -> event.summary: ${event.summary}`)
                   // console.log("name exists");
-                  
-                  // console.log(course);
-                  
+                  // console.log(course);                  
                   if(item.url == url){
-
-                     // console.log(`${event.summary} already exists`);
+                     // if(item.dueDate != event.end.dateTime){
+                     //    // updateCalendarEvent() 
+                     //    console.log("Updating Calendar event")
+                     //    break;  
+                     // }
+                     
                      console.log("already exists");
+                     console.log(`item.dueDate: ${item.dueDate.toISOString()} event.end.dateTime: ${event.end.dateTime}`)
                      exists = true;
                      break;
                   }
@@ -458,7 +461,7 @@ async function getCalendarEvents(token, calendarId){
                // console.log(`Created assignment: ${item.name}`);
                console.log(`Created assignment`);
                // console.log(array);
-               window.setTimeout(function () {createCalendarEvent(item, token, calendarId,event1)}, count *300);
+               window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
                count++;
             }
             // console.log("end")
