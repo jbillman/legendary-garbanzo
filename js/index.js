@@ -432,20 +432,22 @@ async function getCalendarEvents(token, calendarId){
             for (const event of response.items) {
                let course = (event.description).split('->')[0];
                let url =  (event.description).split('->')[1];
+               let date = new Date(event.end.dateTime);
                // console.log(event.summary);
                if(item.name == event.summary){
                   // console.log(`item.name: ${item.name} -> event.summary: ${event.summary}`)
                   // console.log("name exists");
                   // console.log(course);                  
                   if(item.url == url){
-                     // if(item.dueDate != event.end.dateTime){
-                     //    // updateCalendarEvent() 
-                     //    console.log("Updating Calendar event")
-                     //    break;  
-                     // }
+
+                     if(item.dueDate.toISOString() != date.toISOString()){
+                        updateCalendarEvent() 
+                        exists = true;
+                        break;  
+                     }
                      
-                     console.log("already exists");
-                     console.log(`item.dueDate: ${item.dueDate.toISOString()} event.end.dateTime: ${event.end.dateTime}`)
+                     console.log("Assignment up to date");
+                     // console.log(`item.dueDate: ${item.dueDate.toISOString()} event.end.dateTime: ${date.toISOString()}`)
                      exists = true;
                      break;
                   }
@@ -525,6 +527,41 @@ async function createCalendarEvent(assignment, token, calendarId){
       console.log(Error);
    }
 }
+
+async function updateCalendarEvent(assignment, token, calendarId, eventId,){
+   let startDate = new Date(assignment.dueDate)
+   startDate.setHours(assignment.dueDate.getHours() - 2);
+   let body = {
+      start:{
+         dateTime:startDate.toISOString()
+      },
+      end:{
+         dateTime: assignment.dueDate.toISOString()
+      },
+   }
+   let init = {
+      method: 'PUT',
+      async: true,
+      headers: {
+         Authorization: 'Bearer ' + token,
+         'Content-Type': 'application/json'
+      },
+      'contentType': 'json',
+      body: JSON.stringify(body)
+   };
+   fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`)
+   .then(response => {
+      if(response.ok){
+         console.log("Successfully updated calendar event")
+      }
+      else{
+         console.log(response.json())
+      }
+   })
+   .catch(error => {
+      console.log(error);
+   })
+} 
 
 function renderFinished(){
    syncBtn.innerHTML = "Done!";
