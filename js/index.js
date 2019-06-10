@@ -219,10 +219,9 @@ async function checkLoginStatus(){
 function checkSyncButton(){
   chrome.identity.getAuthToken({interactive: true}, token => {
       if(token){
-         if(_userBrightspace != null && _userCanvas != null){
+         if(_userBrightspace != null || _userCanvas != null){
             syncBtn.disabled = false;
             syncBtn.classList.remove('disabled');
-            // syncBtn.classList.add('btn-success');
          }      
       }
    });
@@ -236,7 +235,6 @@ async function getBrightspaceEnrollment(){
          if(item.Access.StartDate != null || item.Access.EndDate != null){
             let temp = {};
             temp.startDate = new Date(item.Access.StartDate);
-            // console.log(temp.startDate >= _semester.startDate.getTime());
             if(temp.startDate.getTime() >= _semester.startDate.getTime() && temp.startDate.getTime() <= _semester.endDate.getTime()){
                console.log(item);
                temp.name = item.OrgUnit.Name;
@@ -257,11 +255,9 @@ async function getBrightspaceEnrollment(){
 async function getCanvasEnrollment(){
    await getText('https://byui.instructure.com/api/v1/users/self/courses?enrollment_state=active&include[]=term')
    .then( response => {
-      // console.log(response);
       let courses = JSON.parse(response.split("while(1);")[1]);
       console.log(courses);
       for(let item of courses){
-         // console.log(item);
          let temp = {};
          temp.startDate = new Date(item.start_at);
          if(item.term.name == _semester.name){
@@ -286,11 +282,9 @@ async function getHomework(courses){
       if(item.source == "brightspace"){
          if(first == true){
             brightspaceIds = item.id;
-            // console.log(item);
             first = false;
          }
          else{
-            // console.log(item);
             brightspaceIds += `,${item.id}`;
          }
       }
@@ -299,7 +293,6 @@ async function getHomework(courses){
                await getText(`https://byui.instructure.com/api/v1/users/self/courses/${item.id}/assignments?per_page=200`)
                .then(response => {
                   let array = JSON.parse(response.split("while(1);")[1]);
-                  // console.log(array);
                   for (const item of array) {
                      if(item.due_at != null){
                         let temp = {};
@@ -307,11 +300,9 @@ async function getHomework(courses){
                         temp.course = getCourseName(item.course_id);
                         temp.dueDate = new Date(item.due_at);
                         temp.url = item.html_url
-                        // console.log(temp);
                         _assignments.push(temp);
                      }
                   }
-                     // console.log(_assignments);
                })
                .catch(error =>{
                   console.log(error);
@@ -327,7 +318,6 @@ async function getHomework(courses){
          console.log(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
          await getJSON(`https://byui.brightspace.com/d2l/api/le/1.25/content/myItems/due/?orgUnitIdsCSV=${brightspaceIds}`)
          .then( response => {
-            // console.log(response);
             for (const item of response.Objects) {  
                if(item.DueDate != null){                 
                   let temp = {};
@@ -335,7 +325,6 @@ async function getHomework(courses){
                   temp.course = getCourseName(item.OrgUnitId);
                   temp.dueDate = new Date(item.DueDate);
                   temp.url = item.ItemUrl
-                  // console.log(temp);
                   _assignments.push(temp);
                }
             }
@@ -348,9 +337,7 @@ async function getHomework(courses){
    }catch(Error){
       console.log(Error);
    }
-   }   
-
-
+}   
 
 function getCourseName(courseId){
    for (const course of _courses) {
@@ -425,55 +412,35 @@ async function getCalendarEvents(token, calendarId){
          console.log(response);
          for (const item of _assignments) {
             let exists = false;
-            // let array = [];
-            // array.push({name:item.name, course:item.course, url:item.url}) 
-            // console.log("start");
-            // console.log(item.name);
             for (const event of response.items) {
                let course = (event.description).split('->')[0];
                let url =  (event.description).split('->')[1];
                let date = new Date(event.end.dateTime);
-               // console.log(event.summary);
                if(item.name == event.summary){
-                  // console.log(`item.name: ${item.name} -> event.summary: ${event.summary}`)
-                  // console.log("name exists");
-                  // console.log(course);                  
                   if(item.url == url){
-
                      if(item.dueDate.toISOString() != date.toISOString()){
-                        updateCalendarEvent() 
+                        console.log(event);
+                        console.log(item);
+                        updateCalendarEvent(item, token, calendarId, event.id) 
                         exists = true;
                         break;  
-                     }
-                     
+                     }                     
                      console.log("Assignment up to date");
-                     // console.log(`item.dueDate: ${item.dueDate.toISOString()} event.end.dateTime: ${date.toISOString()}`)
                      exists = true;
                      break;
                   }
                }
-               // array.push(
-               //    {
-               //       name:{name:event.summary,sameName: (item.name==event.summary)}, 
-               //       course:{course:course, sameCourse:(item.course==course)},
-               //       url:{url:url, sameCourse:(item.url==url)}
-               //    });
             }
             if(!exists){
-               // console.log(`Created assignment: ${item.name}`);
                console.log(`Created assignment`);
-               // console.log(array);
                window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
                count++;
             }
-            // console.log("end")
          }
       }
      if(response.items.length == 0){
          console.log("response length was 0");
          for (const item of _assignments) {
-            // console.log(`Created assignment: ${item.name}`);
-            // console.log(item);
             console.log(`Created assignment`);
 
             window.setTimeout(function () {createCalendarEvent(item, token, calendarId)}, count *300);
@@ -514,7 +481,6 @@ async function createCalendarEvent(assignment, token, calendarId){
      fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, init)
       .then( response => {
          if(response.ok)
-            // console.log(`created new Event: ${assignment.name} : ${assignment.dueDate}`);
             console.log("successfully created new event")
          else
             console.log(response.json());
@@ -528,17 +494,22 @@ async function createCalendarEvent(assignment, token, calendarId){
    }
 }
 
-async function updateCalendarEvent(assignment, token, calendarId, eventId,){
+async function updateCalendarEvent(assignment, token, calendarId, eventId){
+   console.log(assignment);
    let startDate = new Date(assignment.dueDate)
    startDate.setHours(assignment.dueDate.getHours() - 2);
    let body = {
-      start:{
-         dateTime:startDate.toISOString()
+      start: {
+         dateTime: startDate.toISOString()
       },
-      end:{
+      end: {
          dateTime: assignment.dueDate.toISOString()
       },
+      description: `${assignment.course}->${assignment.url}`, 
+      summary: assignment.name
    }
+   
+   
    let init = {
       method: 'PUT',
       async: true,
@@ -549,13 +520,14 @@ async function updateCalendarEvent(assignment, token, calendarId, eventId,){
       'contentType': 'json',
       body: JSON.stringify(body)
    };
-   fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`)
+   fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`, init)
    .then(response => {
       if(response.ok){
-         console.log("Successfully updated calendar event")
+         console.log("Successfully updated calendar event");
+         console.log(response);
       }
       else{
-         console.log(response.json())
+         console.log(response.json());
       }
    })
    .catch(error => {
@@ -565,5 +537,5 @@ async function updateCalendarEvent(assignment, token, calendarId, eventId,){
 
 function renderFinished(){
    syncBtn.innerHTML = "Done!";
-   syncBtn.classList.remove("running")
+   syncBtn.classList.remove("running");
 }
